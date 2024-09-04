@@ -16,3 +16,8 @@ unzip cup2_dataset.zip
 cd cup2_dataset
 mv Java_train.jsonl Java_test.jsonl Java_valid.jsonl ../
 ```
+### Dependencies
+The required dependencies must be installed to run the source code.
+```
+pip install -r requirements.txt
+```
