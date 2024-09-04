@@ -21,3 +21,8 @@ The required dependencies must be installed to run the source code.
 ```
 pip install -r requirements.txt
 ```
+### Generating Embeddings
+run the ProcessData.py file.
+```
+python ProcessData.py
+```
