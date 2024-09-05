@@ -26,3 +26,4 @@ run the ProcessData.py file.
 ```
 python ProcessData.py
 ```
+Running this file will produce new java_train.csv, java_test.csv, and java_valid.csv files. In the Source and Target columns of these files, instead of storing comment and code, it will have embeddings of comment and code for each row.     
