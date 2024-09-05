@@ -16,6 +16,7 @@ unzip cup2_dataset.zip
 cd cup2_dataset
 mv Java_train.jsonl Java_test.jsonl Java_valid.jsonl ../
 ```
+All the newly created csv files will have two columns: 'Source' carrying the comment, and 'Target' carrying the code.
 ### Dependencies
 The required dependencies must be installed to run the source code.
 ```
