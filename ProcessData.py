@@ -36,7 +36,7 @@ def filter(text):
 def trainLanguageModel(lang, embedding, dimensions=300):
     w_filename = "Data/Texts/"+lang+".txt"
     f = open(w_filename, "w+")
-    types_of_data = ["train", "valid", "test"]
+    types_of_data = ["train"]
     print(lang)
     for tod in types_of_data:
         print(tod)
