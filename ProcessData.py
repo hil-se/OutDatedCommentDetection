@@ -42,11 +42,17 @@ def trainLanguageModel(lang, embedding, dimensions=300):
         print(tod)
         filename = lang + "_" + tod + ".csv"
         data = pd.read_csv("Data/Texts/" + filename)
-        sources = data["Source"].tolist()
-        targets = data["Target"].tolist()
-        for s in sources:
+        sources_old = data["Source_Old"].tolist()
+        targets_old = data["Target_Old"].tolist()
+        sources_new = data["Source_New"].tolist()
+        targets_new = data["Target_New"].tolist()
+        for s in sources_old:
             f.write(filter(str(s)) + "\n")
-        for t in targets:
+        for t in targets_old:
+            f.write(filter(str(t)) + "\n")
+        for s in sources_new:
+            f.write(filter(str(s)) + "\n")
+        for t in targets_new:
             f.write(filter(str(t)) + "\n")
     print("\n")
     f.close()
@@ -63,17 +69,26 @@ def generateEmbeddings(lang, embedding):
     for tod in types_of_data:
         print(lang, tod, filename)
         result = []
-            data = pd.read_csv(filename + "_" + tod + ".csv")
-            for index, row in data.iterrows():
-                s = str(row["Source"])
-                t = str(row["Target"])
-                if s.isascii() == False or t.isascii() == False:
+        data = pd.read_csv(filename + "_" + tod + ".csv")
+        for index, row in data.iterrows():
+                s_old = str(row["Source_Old"])
+                t_old = str(row["Target_Old"])
+                s_new = str(row["Source_New"])
+                t_new = str(row["Target_New"])
+                if s_old.isascii() == False or t_old.isascii() == False or s_new.isascii() == False or t_new.isascii() == False:
                     continue
-                s = filter(s)
-                t = filter(t)
-                s = ft.get_sentence_vector(s)
-                t = ft.get_sentence_vector(t)
-                result.append({"Source": t, "Target": s})
+
+                s_old = filter(s_old)
+                t_old = filter(t_old)
+                s_new = filter(s_new)
+                t_new = filter(t_new)
+
+                s_old = ft.get_sentence_vector(s_old)
+                t_old = ft.get_sentence_vector(t_old)
+                s_new = ft.get_sentence_vector(s_new)
+                t_new = ft.get_sentence_vector(t_new)
+
+                result.append({"Source_Old": s_old, "Target_Old": t_old, "Source_New": s_new, "Target_New": t_new})
                 df = pd.DataFrame(result)
                 df_path = "Data/" + embedding + "/CodeSearch300/" + lang + "_" + tod
                 df.to_csv(df_path + ".csv", index=False)
