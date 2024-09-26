@@ -5,9 +5,12 @@ You can download the dataset used in this project from [here](https://drive.goog
 **Instructions**:
 - Download cup2_dataset.zip and extract in Data/Texts directory  
 - Move the contents of cup2_dataset directory to Data/Texts. 
-- Run train_jasonl_to_csv.py to create java_train.csv file.  
-- Run test_jasonl_to_csv.py to create java_test.csv file.
-- Run valid_jasonl_to_csv.py to create java_valid.csv file.
+- Run train_jasonl_to_csv.py to create java_train_all.csv file.  
+- Run test_jasonl_to_csv.py to create java_test_all.csv file.
+- Run valid_jasonl_to_csv.py to create java_valid_all.csv file.
+- Run train_filter_true_labels.py to create java_train.csv file.
+- Run test_filter_true_labels.py to create java_test.csv file.
+- Run valid_filter_true_labels.py to create java_valid.csv file.
 ```bash
 mv cup2_dataset.zip Data/Texts
 cd Data
