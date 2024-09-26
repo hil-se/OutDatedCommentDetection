@@ -2,8 +2,8 @@ import csv
 import json
 
 # Input and output file paths
-input_file = './Java_valid.jsonl'
-output_file = './java_valid.csv'
+input_file = './valid.jsonl'
+output_file = './java_valid_all.csv'
 
 # Open the input JSONL file and the output CSV file
 with open(input_file, 'r') as jsonl_file, open(output_file, 'w', newline='') as csv_file:

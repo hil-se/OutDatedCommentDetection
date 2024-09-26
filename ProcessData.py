@@ -1,5 +1,6 @@
 import pandas as pd
 import fasttext
+from tqdm import tqdm
 
 to_remove = [",", ".", "<", ">", "?", "/", ";", ":", "'", "!", "#", "$", "%", "^", "~",
              "*", "(", ")", "{", "}", "[", "]", "\\", "-", "_", "\n", "\t" "@", "&", "`"]
@@ -57,41 +58,56 @@ def trainLanguageModel(lang, embedding, dimensions=300):
     print("\n")
     f.close()
     model = fasttext.train_unsupervised(w_filename, embedding, dim=dimensions)
-    model_path = "Data/Trained models/"+lang
+    model_path = "Data/Trained_models/"+lang
     model.save_model(model_path + ".bin")
 
+
 def generateEmbeddings(lang, embedding):
-    model_path = "Data/Trained models/" + lang
-    ft = fasttext.load_model(model_path+".bin")
+    model_path = "Data/Trained_models/" + lang
+    ft = fasttext.load_model(model_path + ".bin")
     types_of_data = ["train", "valid", "test"]
-    result = []
     filename = "Data/Texts/" + lang
+
     for tod in types_of_data:
         print(lang, tod, filename)
         result = []
         data = pd.read_csv(filename + "_" + tod + ".csv")
-        for index, row in data.iterrows():
-                s_old = str(row["Source_Old"])
-                t_old = str(row["Target_Old"])
-                s_new = str(row["Source_New"])
-                t_new = str(row["Target_New"])
-                if s_old.isascii() == False or t_old.isascii() == False or s_new.isascii() == False or t_new.isascii() == False:
-                    continue
 
-                s_old = filter(s_old)
-                t_old = filter(t_old)
-                s_new = filter(s_new)
-                t_new = filter(t_new)
+        # Initialize tqdm progress bar
+        for index, row in tqdm(data.iterrows(), total=len(data), desc=f"Processing {tod}"):
+            s_old = str(row["Source_Old"])
+            t_old = str(row["Target_Old"])
+            s_new = str(row["Source_New"])
+            t_new = str(row["Target_New"])
 
-                s_old = ft.get_sentence_vector(s_old)
-                t_old = ft.get_sentence_vector(t_old)
-                s_new = ft.get_sentence_vector(s_new)
-                t_new = ft.get_sentence_vector(t_new)
+            # Skip rows with non-ASCII data
+            if not (s_old.isascii() and t_old.isascii() and s_new.isascii() and t_new.isascii()):
+                continue
 
-                result.append({"Source_Old": s_old, "Target_Old": t_old, "Source_New": s_new, "Target_New": t_new})
-                df = pd.DataFrame(result)
-                df_path = "Data/" + embedding + "/CodeSearch300/" + lang + "_" + tod
-                df.to_csv(df_path + ".csv", index=False)
+            # Process and filter the text
+            s_old = filter(s_old)
+            t_old = filter(t_old)
+            s_new = filter(s_new)
+            t_new = filter(t_new)
+
+            # Get sentence vectors from FastText
+            s_old_vec = ft.get_sentence_vector(s_old)
+            t_old_vec = ft.get_sentence_vector(t_old)
+            s_new_vec = ft.get_sentence_vector(s_new)
+            t_new_vec = ft.get_sentence_vector(t_new)
+
+            # Append the result to the list
+            result.append({
+                "Source_Old": s_old_vec,
+                "Target_Old": t_old_vec,
+                "Source_New": s_new_vec,
+                "Target_New": t_new_vec
+            })
+
+        # Write all the results to CSV at once after processing
+        df = pd.DataFrame(result)
+        df_path = "Data/" + embedding + "/embeddings/" + lang + "_" + tod
+        df.to_csv(df_path + ".csv", index=False)
 
 
 def processData(lang="java", embedding="cbow", dimensions=300):
