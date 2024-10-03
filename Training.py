@@ -35,17 +35,15 @@ def learn(train_data,
     # Initialize encoder
     encoder = None
 
-    # Check if 'input_layer' or 'target_old' exists in train_data
-    if 'input_layer' in train_data.element_spec:
-        input_size = train_data.element_spec['input_layer'].shape[1]
-        encoder = create_encoder(
+    
+    
+    input_size = train_data.element_spec['input_layer'].shape[1]
+    encoder = create_encoder(
             num_of_layers,
             input_size=input_size,  # Corrected the argument name
             output_size=output_size,
             dropout_rate=dropout_rate
         )
-    else:
-        raise ValueError("Neither 'source' nor 'target_old' found in train_data.")
 
     # Set up learning rate schedule and compile model
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -72,6 +70,7 @@ def learn(train_data,
 
 
 def train_model(train, val, output_size=5000, batch_size=5000, epochs=300, num_of_layers=1, model_name="model"):
+    
     # Shuffle the datasets
     np.random.shuffle(train.values)
     np.random.shuffle(val.values)
@@ -85,12 +84,14 @@ def train_model(train, val, output_size=5000, batch_size=5000, epochs=300, num_o
     if "Source_Old" in train.columns:
         td_s = train["Source_Old"].to_list()
         train_features["input_layer"] = np.array([emb for emb in td_s])
+        
 
     if "Target_Old" in train.columns and "Target_New" in train.columns:
         td_to = train["Target_Old"].to_list()
         td_tn = train["Target_New"].to_list()
-        train_features["target_old"] = np.array([emb for emb in td_to])
-        train_features["target_new"] = np.array([emb for emb in td_tn])
+        train_features["input_layer"] = np.array([emb for emb in td_to])
+        train_features["input_layer"] = np.array([emb for emb in td_tn])
+        
 
     # Validate and filter features
     train_features = validate_and_filter_features(train_features)
