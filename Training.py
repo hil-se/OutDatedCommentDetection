@@ -109,8 +109,8 @@ def train_model(train, val, output_size=5000, batch_size=5000, epochs=300, num_o
     if "Target_Old" in val.columns and "Target_New" in val.columns:
         td_to = val["Target_Old"].to_list()
         td_tn = val["Target_New"].to_list()
-        val_features["target_old"] = np.array([emb for emb in td_to])
-        val_features["target_new"] = np.array([emb for emb in td_tn])
+        val_features["input_layer"] = np.array([emb for emb in td_to])
+        val_features["input_layer"] = np.array([emb for emb in td_tn])
 
     # Validate and filter features
     val_features = validate_and_filter_features(val_features)
