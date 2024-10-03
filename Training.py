@@ -20,6 +20,27 @@ def validate_and_filter_features(features_dict):
     return features_dict
 
 
+class MyModel(tf.keras.Model):
+    def __init__(self,num_of_layers,input_size,output_size,dropout_rate):
+        super().__init__()
+        self.encoder1 = create_encoder(
+            num_of_layers,
+            input_size=input_size,  # Corrected the argument name
+            output_size=output_size,
+            dropout_rate=dropout_rate
+        )
+        self.encoder2 = create_encoder(
+            num_of_layers,
+            input_size=input_size,  # Corrected the argument name
+            output_size=output_size,
+            dropout_rate=dropout_rate
+        )
+
+    def call(self, inputs, training=False):
+        x1 = self.encoder1(inputs[0])
+        x2 = self.encoder2(inputs[1])
+        return np.cos(x1, x2)
+
 def learn(train_data,
           output_size=300,
           epochs=600,
@@ -35,7 +56,8 @@ def learn(train_data,
     # Initialize encoder
     encoder = None
 
-    
+    model = MyModel(num_of_layers,input_size,output_size,dropout_rate)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule), loss='mean_squared_error')
     
     input_size = train_data.element_spec['input_layer'].shape[1]
     encoder = create_encoder(
