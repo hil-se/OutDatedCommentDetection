@@ -1,217 +1,77 @@
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from DataReader import Reader
-from DualEncoder import DualEncoderAll, create_encoder
 import numpy as np
 import pandas as pd
-import time
-import datetime
+from DataReader import Reader
+import os
 
-pd.set_option('display.max_columns', None)
-DATA_LOAD_PATH = ""
+# Load embeddings using DataReader
+embedding_reader = Reader("cbow")
+embeddings = embedding_reader.load("embeddings/java_train")  # Replace with the actual file name (without .csv)
 
+# Unpack loaded embeddings
+source_series_old = np.array(embeddings["source_old"])
+target_series_old = np.array(embeddings["target_old"])
+target_series_new = np.array(embeddings["target_new"])
 
-def validate_and_filter_features(features_dict):
-    for key, value in features_dict.items():
-        if value is None or np.any([v is None for v in value]):
-            features_dict[key] = np.array([v for v in value if v is not None])
-            if len(features_dict[key]) == 0:
-                raise ValueError(f"All values are None in feature '{key}'")
-    return features_dict
+# Ensure that all the embeddings have the correct shape
+if source_series_old.shape[1] != target_series_old.shape[1] or source_series_old.shape[1] != target_series_new.shape[1]:
+    raise ValueError("The dimensions of the embeddings do not match!")
 
+# Define the input shape (embedding size)
+embedding_dim = source_series_old.shape[1]
 
-class MyModel(tf.keras.Model):
-    def __init__(self,num_of_layers,input_size,output_size,dropout_rate):
-        super().__init__()
-        self.encoder1 = create_encoder(
-            num_of_layers,
-            input_size=input_size,  # Corrected the argument name
-            output_size=output_size,
-            dropout_rate=dropout_rate
-        )
-        self.encoder2 = create_encoder(
-            num_of_layers,
-            input_size=input_size,  # Corrected the argument name
-            output_size=output_size,
-            dropout_rate=dropout_rate
-        )
+# Define the encoder model
+def create_encoder(input_shape):
+    input_layer = tf.keras.Input(shape=input_shape)
+    dense_layer = tf.keras.layers.Dense(embedding_dim, activation='relu')(input_layer)
+    norm_layer = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=1))(dense_layer)
+    return tf.keras.Model(inputs=input_layer, outputs=norm_layer)
 
-    def call(self, inputs, training=False):
-        x1 = self.encoder1(inputs[0])
-        x2 = self.encoder2(inputs[1])
-        return np.cos(x1, x2)
+# Create two encoders
+encoder_source = create_encoder((embedding_dim,))
+encoder_target = create_encoder((embedding_dim,))
 
-def learn(train_data,
-          output_size=300,
-          epochs=600,
-          validation_data=None,
-          num_of_layers=1,
-          dropout_rate=0.3,
-          temperature=0.05,
-          lr=0.001,
-          decay_steps=10,
-          decay_rate=0.96,
-          patience=15,
-          model_name="model"):
-    # Initialize encoder
-    encoder = None
+# Inputs to the encoders
+input_source = tf.keras.Input(shape=(embedding_dim,))
+input_target = tf.keras.Input(shape=(embedding_dim,))
 
-    model = MyModel(num_of_layers,input_size,output_size,dropout_rate)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule), loss='mean_squared_error')
-    
-    input_size = train_data.element_spec['input_layer'].shape[1]
-    encoder = create_encoder(
-            num_of_layers,
-            input_size=input_size,  # Corrected the argument name
-            output_size=output_size,
-            dropout_rate=dropout_rate
-        )
+# Get the outputs of the encoders
+encoded_source = encoder_source(input_source)
+encoded_target = encoder_target(input_target)
 
-    # Set up learning rate schedule and compile model
-    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        lr, decay_steps=decay_steps, decay_rate=decay_rate, staircase=True
-    )
-    encoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule), loss='mean_squared_error')
-    # Set up early stopping callback
-    early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor="val_loss", patience=patience, restore_best_weights=True
-    )
+# Calculate cosine similarity
+cosine_similarity = tf.keras.layers.Dot(axes=1, normalize=False)([encoded_source, encoded_target])
 
-    # Train the model
-    encoder.fit(
-        train_data,
-        epochs=epochs,
-        validation_data=validation_data,
-        callbacks=[early_stopping],
-    )
+# Build and compile the model
+model = tf.keras.Model(inputs=[input_source, input_target], outputs=cosine_similarity)
+model.compile(optimizer='adam', loss='mean_squared_error')
 
-    encoder.save(f"{model_name}.h5")
-    print(f"Model saved as {model_name}.h5")
+# Labels: Cosine similarity between source_series_old and target_series_old is labeled as 1
+labels_old = np.ones(source_series_old.shape[0])
 
-    return encoder
+# Train the model with source_series_old and target_series_old embeddings
+model.fit([source_series_old, target_series_old], labels_old, epochs=10, batch_size=32)
 
+# Saving the model
+model_save_path = "model_cosine_similarity.h5"  # Path to save the model
+model.save(model_save_path)
+print(f"Model saved to: {model_save_path}")
 
-def train_model(train, val, output_size=5000, batch_size=5000, epochs=300, num_of_layers=1, model_name="model"):
-    
-    # Shuffle the datasets
-    np.random.shuffle(train.values)
-    np.random.shuffle(val.values)
-    print(len(train.index), len(val.index))
+# Testing: Use the same encoder for source_series_old and the new target embeddings
+target_encoder_new = create_encoder((embedding_dim,))
 
-    # Initialize features for train and validation datasets
-    train_features = {}
-    val_features = {}
+# Get the encoded representations for the new target series
+encoded_target_new = target_encoder_new(target_series_new)
 
-    # Check for columns in train and add them to features
-    if "Source_Old" in train.columns:
-        td_s = train["Source_Old"].to_list()
-        train_features["input_layer"] = np.array([emb for emb in td_s])
-        
+# Calculate cosine similarity between source_series_old and encoded_target_new
+predicted_similarity = model.predict([source_series_old, encoded_target_new])
 
-    if "Target_Old" in train.columns and "Target_New" in train.columns:
-        td_to = train["Target_Old"].to_list()
-        td_tn = train["Target_New"].to_list()
-        train_features["input_layer"] = np.array([np.concatenate([old, new]) for old, new in zip(td_to, td_tn)])
-        
+# Print the predicted similarities
+print("Cosine similarity between source_series_old and target_series_new:")
+print(predicted_similarity)
 
-    # Validate and filter features
-    train_features = validate_and_filter_features(train_features)
-
-    if not train_features:
-        raise ValueError("No valid columns ('Source_Old', 'Target_Old', 'Target_New') found in the training dataset.")
-
-    train_dataset = tf.data.Dataset.from_tensor_slices(train_features).batch(batch_size)
-
-    # Check for columns in validation and add them to features
-    if "Source_Old" in val.columns:
-        v_s = val["Source_Old"].to_list()
-        val_features["input_layer"] = np.array([emb for emb in v_s])
-
-    if "Target_Old" in val.columns and "Target_New" in val.columns:
-        v_to = val["Target_Old"].to_list()
-        v_tn = val["Target_New"].to_list()
-        val_features["input_layer"] = np.array([np.concatenate([old, new]) for old, new in zip(v_to, v_tn)])
-
-    # Validate and filter features
-    val_features = validate_and_filter_features(val_features)
-
-    if not val_features:
-        raise ValueError("No valid columns ('Source_Old', 'Target_Old', 'Target_New') found in the validation dataset.")
-
-    val_dataset = tf.data.Dataset.from_tensor_slices(val_features).batch(batch_size)
-
-    # Train the dual encoder model
-    dual_encoder = learn(train_dataset, output_size=output_size, epochs=epochs,
-                         validation_data=val_dataset, num_of_layers=num_of_layers, model_name=model_name)
-
-    return dual_encoder
-
-
-def allLanguageExperiment(languages,
-                          embedding="cbow",
-                          output_size=1000,
-                          batch_size=1000,
-                          test_set_size=1000,
-                          num_of_layers=1,
-                          threshold=0.5,
-                          number_of_experiments=5):
-    for lang in languages:
-        print(lang.upper())
-        r = Reader(embedding)
-        r.load("embeddings/java_train")
-        train = pd.concat([r.source_series_old], axis=1)
-
-        r = Reader(embedding)
-        r.load("embeddings/java_valid")
-        val = pd.concat([r.source_series_old], axis=1)
-
-        print("training source encoder")
-        print("output_size", "batch_size", "thres")
-        print(output_size, batch_size, threshold)
-        print("*****************************")
-
-        start_tr = time.time()
-        np.random.shuffle(train.values)
-        np.random.shuffle(val.values)
-        train_model(train, val, output_size, batch_size, num_of_layers=num_of_layers,
-                    model_name=f"encoder_{lang}_source")
-        end_tr = time.time()
-        tr_time = round(end_tr - start_tr, 3)
-        print("Training time:", tr_time)
-
-        print("End")
-
-        r = Reader(embedding)
-        r.load("java_train")
-        train = pd.concat([r.target_series_old, r.target_series_new], axis=1)
-
-        r = Reader(embedding)
-        r.load("java_valid")
-        val = pd.concat([r.target_series_old, r.target_series_new], axis=1)
-
-        print("training target encoder")
-        print("output_size", "batch_size", "thres")
-        print(output_size, batch_size, threshold)
-        print("*****************************")
-
-        start_tr = time.time()
-        np.random.shuffle(train.values)
-        np.random.shuffle(val.values)
-        train_model(train, val, output_size, batch_size, num_of_layers=num_of_layers,
-                    model_name=f"encoder_{lang}_target")
-        end_tr = time.time()
-        tr_time = round(end_tr - start_tr, 3)
-        print("Training time:", tr_time)
-
-        print("End")
-
-
-languages = ["java"]
-allLanguageExperiment(languages=languages,
-                      embedding="cbow",
-                      output_size=2000,
-                      batch_size=2000,
-                      test_set_size=1000,
-                      threshold=0.5,
-                      num_of_layers=1,
-                      number_of_experiments=25)
+# Save the predicted similarities to a CSV file
+results_df = pd.DataFrame(predicted_similarity, columns=["Cosine Similarity"])
+results_csv_path = "predicted_cosine_similarity.csv"  # Path to save the results
+results_df.to_csv(results_csv_path, index=False)
+print(f"Predicted cosine similarity saved to: {results_csv_path}")
