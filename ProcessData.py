@@ -79,6 +79,7 @@ def generateEmbeddings(lang, embedding):
             t_old = str(row["Target_Old"])
             s_new = str(row["Source_New"])
             t_new = str(row["Target_New"])
+            label = row.get("Label", None)  # Get the 'Label' if it exists, otherwise use None
 
             # Skip rows with non-ASCII data
             if not (s_old.isascii() and t_old.isascii() and s_new.isascii() and t_new.isascii()):
@@ -96,12 +97,13 @@ def generateEmbeddings(lang, embedding):
             s_new_vec = ft.get_sentence_vector(s_new)
             t_new_vec = ft.get_sentence_vector(t_new)
 
-            # Append the result to the list
+            # Append the result to the list, including the label
             result.append({
                 "Source_Old": s_old_vec,
                 "Target_Old": t_old_vec,
                 "Source_New": s_new_vec,
-                "Target_New": t_new_vec
+                "Target_New": t_new_vec,
+                "Label": label  # Add the label to the result
             })
 
         # Write all the results to CSV at once after processing
