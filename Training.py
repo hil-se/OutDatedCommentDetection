@@ -4,6 +4,17 @@ import pandas as pd
 from DataReader import Reader
 import os
 
+
+
+# Custom L2 normalization layer to avoid Lambda issues
+class L2Normalization(tf.keras.layers.Layer):
+    def call(self, inputs):
+        return tf.math.l2_normalize(inputs, axis=1)
+
+    def compute_output_shape(self, input_shape):
+        return input_shape  # Output shape matches input shape
+
+
 # Load embeddings using DataReader
 embedding_reader = Reader("cbow")
 embeddings = embedding_reader.load("embeddings/java_train")  # Replace with the actual file name (without .csv)
@@ -22,16 +33,19 @@ if source_series_old.shape[1] != target_series_old.shape[1] or \
 # Define the input shape (embedding size)
 embedding_dim = source_series_old.shape[1]
 
-# Define the encoder model
-def create_encoder(input_shape):
+
+
+# Create an encoder model using the custom normalization layer
+def create_encoder(input_shape, embedding_dim):
     input_layer = tf.keras.Input(shape=input_shape)
     dense_layer = tf.keras.layers.Dense(embedding_dim, activation='relu')(input_layer)
-    norm_layer = tf.keras.layers.LayerNormalization(axis=1)(dense_layer)
+    norm_layer = L2Normalization()(dense_layer)  # Use custom normalization
     return tf.keras.Model(inputs=input_layer, outputs=norm_layer)
 
+
 # Create two encoders
-encoder_source = create_encoder((embedding_dim,))
-encoder_target = create_encoder((embedding_dim,))
+encoder_source = create_encoder((embedding_dim,), embedding_dim)
+encoder_target = create_encoder((embedding_dim,), embedding_dim)
 
 # Inputs to the encoders
 input_source = tf.keras.Input(shape=(embedding_dim,))
@@ -62,14 +76,17 @@ input_target_combined = np.vstack([target_series_old, target_series_new])
 labels_old = np.ones(source_series_old.shape[0])
 
 # Calculate cosine similarities for (source_series_old, source_series_new)
+epsilon = 1e-10
 cosine_labels_new = np.array([
-    np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + epsilon)
     for a, b in zip(source_series_old, source_series_new)
 ])
 
 # Concatenate all labels
 combined_labels = np.concatenate([labels_old, cosine_labels_new])
+assert combined_labels.shape[0] == input_source_combined.shape[0]
 
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss='mean_squared_error')
 # ------------------------
 # Train the Model in One Step
 # ------------------------
@@ -80,7 +97,7 @@ model.fit([input_source_combined, input_target_combined], combined_labels, epoch
 # Save the Model
 # ------------------------
 model_save_path = "model_cosine_similarity.h5"
-model.save(model_save_path)
+model.save(model_save_path, save_format='h5')
 print(f"Model saved to: {model_save_path}")
 
 
