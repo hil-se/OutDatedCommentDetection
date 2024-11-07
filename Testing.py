@@ -56,3 +56,19 @@ results_df = pd.DataFrame({
 results_csv_path = "predicted_cosine_similarity_results.csv"
 results_df.to_csv(results_csv_path, index=False)
 print(f"Results saved to: {results_csv_path}")
+
+
+
+######
+def rank_error(df):
+    ranks = df["True Label"][np.argsort(df["Cosine Similarity"])]
+    sum = 0
+    tmp = 0
+    num = 0
+    for label in ranks:
+        if label == "True":
+            sum += tmp/len(ranks)
+            num += 1
+        else:
+            tmp += 1
+    return sum / num
