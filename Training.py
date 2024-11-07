@@ -15,6 +15,11 @@ class L2Normalization(tf.keras.layers.Layer):
         return input_shape  # Output shape matches input shape
 
 
+class EuclideanDistanceLayer(tf.keras.layers.Layer):
+    def call(self, inputs):
+        source, target = inputs
+        return tf.sqrt(tf.reduce_sum(tf.square(source - target), axis=1))
+
 # Load embeddings using DataReader
 embedding_reader = Reader("cbow")
 embeddings = embedding_reader.load("embeddings/java_train")  # Replace with the actual file name (without .csv)
@@ -24,6 +29,9 @@ source_series_old = np.array(embeddings["source_old"])
 target_series_old = np.array(embeddings["target_old"])
 source_series_new = np.array(embeddings["source_new"])
 target_series_new = np.array(embeddings["target_new"])
+
+
+print(source_series_old)
 
 # Ensure all embeddings have the same shape
 if source_series_old.shape[1] != target_series_old.shape[1] or \
@@ -55,12 +63,29 @@ input_target = tf.keras.Input(shape=(embedding_dim,))
 encoded_source = encoder_source(input_source)
 encoded_target = encoder_target(input_target)
 
+
+
+
+# Then you can just use this pre-calculated distance in the model
+distance_calculation = EuclideanDistanceLayer()([encoded_source, encoded_target])
+
+
+
+# Define the contrastive loss function
+def contrastive_loss(y_true, y_pred, margin=1.0):
+    # y_pred represents the Euclidean distance between encoded pairs
+    square_pred = tf.square(y_pred)
+    margin_square = tf.square(tf.maximum(margin - y_pred, 0))
+    return tf.reduce_mean(y_true * square_pred + (1 - y_true) * margin_square)
+
+
+
 # Calculate cosine similarity
-cosine_similarity = tf.keras.layers.Dot(axes=1, normalize=False)([encoded_source, encoded_target])
+# cosine_similarity = tf.keras.layers.Dot(axes=1, normalize=False)([encoded_source, encoded_target])
 
 # Build and compile the model
-model = tf.keras.Model(inputs=[input_source, input_target], outputs=cosine_similarity)
-model.compile(optimizer='adam', loss='mean_squared_error')
+model = tf.keras.Model(inputs=[input_source, input_target], outputs=distance_calculation)
+model.compile(optimizer='adam', loss=contrastive_loss)
 
 # ------------------------
 # Prepare Data for One-Step Training
@@ -76,17 +101,20 @@ input_target_combined = np.vstack([target_series_old, target_series_new])
 labels_old = np.ones(source_series_old.shape[0])
 
 # Calculate cosine similarities for (source_series_old, source_series_new)
-epsilon = 1e-10
-cosine_labels_new = np.array([
-    np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + epsilon)
-    for a, b in zip(source_series_old, source_series_new)
-])
+# epsilon = 1e-10
+# cosine_labels_new = np.array([
+#     np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + epsilon)
+#     for a, b in zip(source_series_old, source_series_new)
+# ])
+
+cosine_labels_new = np.zeros(source_series_old.shape[0])
+
 
 # Concatenate all labels
 combined_labels = np.concatenate([labels_old, cosine_labels_new])
 assert combined_labels.shape[0] == input_source_combined.shape[0]
 
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss='mean_squared_error')
+
 # ------------------------
 # Train the Model in One Step
 # ------------------------

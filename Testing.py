@@ -2,7 +2,8 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 from DataReader import Reader
-from Training import L2Normalization
+from Training import L2Normalization, contrastive_loss, EuclideanDistanceLayer
+
 from keras.utils import custom_object_scope
 
 # Load test embeddings and labels using DataReader
@@ -19,19 +20,34 @@ print(f"Loaded {len(source_series_old)} samples for testing.")
 
 # Load the pre-trained model
 model_path = "model_cosine_similarity.h5"
-with custom_object_scope({'L2Normalization': L2Normalization}):
+with custom_object_scope({'L2Normalization': L2Normalization, 'contrastive_loss': contrastive_loss, 'EuclideanDistanceLayer': EuclideanDistanceLayer}):
     model = tf.keras.models.load_model(model_path)
 
+
 # Predict cosine similarities
-predicted_similarity = model.predict([source_series_old, target_series_new])
-predicted_similarity = predicted_similarity.flatten()  # Ensure it's a 1D array
-print(predicted_similarity)
+# predicted_similarity = model.predict([source_series_old, target_series_new])
+# predicted_similarity = predicted_similarity.flatten()  # Ensure it's a 1D array
+# print(predicted_similarity)
+
+
+# Predict Euclidean (L2) distance
+predicted_distance = model.predict([source_series_old, target_series_new])
+predicted_distance = predicted_distance.flatten()  # Ensure it's a 1D array
+print(predicted_distance)
+
+
 # Create 'predicted_label' based on cosine similarity threshold
-predicted_labels = predicted_similarity < 0.5  # True if similarity < 0.5
+predicted_labels = predicted_distance < 0.5  # True if similarity < 0.5
 
 # Create a DataFrame to store results
+# results_df = pd.DataFrame({
+#     "Cosine Similarity": predicted_similarity,
+#     "True Label": true_labels,
+#     "Predicted Label": predicted_labels
+# })
+
 results_df = pd.DataFrame({
-    "Cosine Similarity": predicted_similarity,
+    "Euclidean Distance": predicted_distance,
     "True Label": true_labels,
     "Predicted Label": predicted_labels
 })
