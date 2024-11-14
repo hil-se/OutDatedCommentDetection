@@ -15,10 +15,10 @@ class L2Normalization(tf.keras.layers.Layer):
         return input_shape  # Output shape matches input shape
 
 
-class EuclideanDistanceLayer(tf.keras.layers.Layer):
-    def call(self, inputs):
-        source, target = inputs
-        return tf.sqrt(tf.reduce_sum(tf.square(source - target), axis=1))
+# class EuclideanDistanceLayer(tf.keras.layers.Layer):
+#     def call(self, inputs):
+#         source, target = inputs
+#         return tf.sqrt(tf.reduce_sum(tf.square(source - target), axis=1))
 
 # Load embeddings using DataReader
 embedding_reader = Reader("cbow")
@@ -67,25 +67,27 @@ encoded_target = encoder_target(input_target)
 
 
 # Then you can just use this pre-calculated distance in the model
-distance_calculation = EuclideanDistanceLayer()([encoded_source, encoded_target])
+# distance_calculation = EuclideanDistanceLayer()([encoded_source, encoded_target])
 
 
 
-# Define the contrastive loss function
-def contrastive_loss(y_true, y_pred, margin=1.0):
-    # y_pred represents the Euclidean distance between encoded pairs
-    square_pred = tf.square(y_pred)
-    margin_square = tf.square(tf.maximum(margin - y_pred, 0))
-    return tf.reduce_mean(y_true * square_pred + (1 - y_true) * margin_square)
+# # Define the contrastive loss function
+# def contrastive_loss(y_true, y_pred, margin=1.0):
+#     # y_pred represents the Euclidean distance between encoded pairs
+#     square_pred = tf.square(y_pred)
+#     margin_square = tf.square(tf.maximum(margin - y_pred, 0))
+#     return tf.reduce_mean(y_true * square_pred + (1 - y_true) * margin_square)
 
 
 
 # Calculate cosine similarity
-# cosine_similarity = tf.keras.layers.Dot(axes=1, normalize=False)([encoded_source, encoded_target])
+cosine_similarity = tf.keras.layers.Dot(axes=1, normalize=False)([encoded_source, encoded_target])
+
 
 # Build and compile the model
-model = tf.keras.Model(inputs=[input_source, input_target], outputs=distance_calculation)
-model.compile(optimizer='adam', loss=contrastive_loss)
+model = tf.keras.Model(inputs=[input_source, input_target], outputs=cosine_similarity)
+
+model.compile(optimizer='adam', loss='mean_squared_error')
 
 # ------------------------
 # Prepare Data for One-Step Training
@@ -119,7 +121,7 @@ assert combined_labels.shape[0] == input_source_combined.shape[0]
 # Train the Model in One Step
 # ------------------------
 print("Starting one-step training...")
-model.fit([input_source_combined, input_target_combined], combined_labels, epochs=10, batch_size=32)
+model.fit([input_source_combined, input_target_combined], combined_labels, epochs=300, batch_size=32)
 
 # ------------------------
 # Save the Model
