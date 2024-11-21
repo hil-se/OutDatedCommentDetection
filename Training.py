@@ -46,9 +46,13 @@ embedding_dim = source_series_old.shape[1]
 # Create an encoder model using the custom normalization layer
 def create_encoder(input_shape, embedding_dim):
     input_layer = tf.keras.Input(shape=input_shape)
-    dense_layer = tf.keras.layers.Dense(embedding_dim, activation='relu')(input_layer)
-    norm_layer = L2Normalization()(dense_layer)  # Use custom normalization
+    # Double the size of the dense layer
+    dense_layer1 = tf.keras.layers.Dense(4 * embedding_dim, activation='relu')(input_layer)
+    dense_layer2 = tf.keras.layers.Dense(2 * embedding_dim, activation='relu')(dense_layer1)
+    reduced_layer = tf.keras.layers.Dense(embedding_dim, activation='relu')(dense_layer2)
+    norm_layer = L2Normalization()(reduced_layer)
     return tf.keras.Model(inputs=input_layer, outputs=norm_layer)
+
 
 
 # Create two encoders
@@ -121,7 +125,7 @@ assert combined_labels.shape[0] == input_source_combined.shape[0]
 # Train the Model in One Step
 # ------------------------
 print("Starting one-step training...")
-model.fit([input_source_combined, input_target_combined], combined_labels, epochs=300, batch_size=32)
+model.fit([input_source_combined, input_target_combined], combined_labels, epochs=50, batch_size=32)
 
 # ------------------------
 # Save the Model
