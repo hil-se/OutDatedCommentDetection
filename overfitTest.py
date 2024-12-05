@@ -25,16 +25,19 @@ model_path = "model_cosine_similarity.h5"
 with custom_object_scope({'L2Normalization': L2Normalization}):
     model = tf.keras.models.load_model(model_path)
 
+# Instantiate the MeanSquaredError class
+mse = tf.keras.losses.MeanSquaredError()
+
 # Evaluate model on training data
 train_predictions = model.predict([train_source, train_target])
-train_loss = tf.keras.losses.mean_squared_error(train_labels, train_predictions).numpy()
+train_loss = mse(train_labels, train_predictions).numpy()
 train_accuracy = np.mean(
     (train_predictions.flatten() < 0.8) == train_labels
 )
 
 # Evaluate model on validation data
 valid_predictions = model.predict([valid_source, valid_target])
-valid_loss = tf.keras.losses.mean_squared_error(valid_labels, valid_predictions).numpy()
+valid_loss = mse(valid_labels, valid_predictions).numpy()
 valid_accuracy = np.mean(
     (valid_predictions.flatten() < 0.8) == valid_labels
 )
