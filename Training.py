@@ -46,12 +46,24 @@ embedding_dim = source_series_old.shape[1]
 # Create an encoder model using the custom normalization layer
 def create_encoder(input_shape, embedding_dim):
     input_layer = tf.keras.Input(shape=input_shape)
-    # Double the size of the dense layer
-    dense_layer1 = tf.keras.layers.Dense(4 * embedding_dim, activation='relu')(input_layer)
-    dense_layer2 = tf.keras.layers.Dense(2 * embedding_dim, activation='relu')(dense_layer1)
-    reduced_layer = tf.keras.layers.Dense(embedding_dim, activation='relu')(dense_layer2)
-    norm_layer = L2Normalization()(reduced_layer)
+
+    # Initial dense layer
+    x = tf.keras.layers.Dense(embedding_dim * 4, activation='relu')(input_layer)
+    pre = x  # Use the output of the first dense layer as the initial "pre"
+
+    # Add residual connections for specified layers
+    for i in range(2):
+        new = tf.keras.layers.Dense(embedding_dim * 4, activation=None)(x)
+        new = tf.keras.layers.Dropout(0.1)(new)
+        x = tf.keras.layers.Add()([pre, new])  # Residual connection
+        x = tf.keras.layers.ReLU()(x)  # Apply activation after addition
+        pre = x  # Update "pre" for the next residual connection
+
+    # Final reduction layer and normalization
+    norm_layer = L2Normalization()(x)
+
     return tf.keras.Model(inputs=input_layer, outputs=norm_layer)
+
 
 
 

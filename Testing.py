@@ -8,7 +8,7 @@ from keras.utils import custom_object_scope
 
 # Load test embeddings and labels using DataReader
 embedding_reader = Reader("cbow")  # Set testset=True if reading test data
-test_embeddings = embedding_reader.load("embeddings/java_test")  # Ensure correct file path
+test_embeddings = embedding_reader.load("embeddings/java_train_all_subset")  # Ensure correct file path
 
 # Unpack embeddings and labels
 source_series_old = np.array(test_embeddings["source_old"])
@@ -41,7 +41,7 @@ print(predicted_similarity)
 
 
 # Create 'predicted_label' based on cosine similarity threshold
-predicted_labels = predicted_similarity < 0.5  # True if similarity < 0.5
+predicted_labels = predicted_similarity < 0.8  # True if similarity < 0.5
 
 # Create a DataFrame to store results
 results_df = pd.DataFrame({
