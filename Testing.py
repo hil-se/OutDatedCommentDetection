@@ -5,10 +5,12 @@ from DataReader import Reader
 # from Training import L2Normalization, contrastive_loss, EuclideanDistanceLayer
 from Training import L2Normalization
 from keras.utils import custom_object_scope
+from sklearn.metrics import f1_score, precision_score, recall_score
+
 
 # Load test embeddings and labels using DataReader
 embedding_reader = Reader("cbow")  # Set testset=True if reading test data
-test_embeddings = embedding_reader.load("embeddings/java_train_all_subset")  # Ensure correct file path
+test_embeddings = embedding_reader.load("embeddings/java_valid_all")  # Ensure correct file path
 
 # Unpack embeddings and labels
 source_series_old = np.array(test_embeddings["source_old"])
@@ -41,7 +43,7 @@ print(predicted_similarity)
 
 
 # Create 'predicted_label' based on cosine similarity threshold
-predicted_labels = predicted_similarity < 0.8  # True if similarity < 0.5
+predicted_labels = predicted_similarity < 0.2  # True if similarity < 0.2
 
 # Create a DataFrame to store results
 results_df = pd.DataFrame({
@@ -84,3 +86,23 @@ def rank_error(df):
 # Apply rank_error function on the results DataFrame
 error_rate = rank_error(results_df)
 print(f"Rank Error: {error_rate}")
+
+
+# Calculate metrics
+precision = precision_score(true_labels, predicted_labels)
+recall = recall_score(true_labels, predicted_labels)
+f1 = f1_score(true_labels, predicted_labels)
+
+# Print results
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1-Score: {f1:.4f}")
+
+# Optionally save results to a file
+metrics_path = "evaluation_metrics.txt"
+with open(metrics_path, "w") as f:
+    f.write(f"Precision: {precision:.4f}\n")
+    f.write(f"Recall: {recall:.4f}\n")
+    f.write(f"F1-Score: {f1:.4f}\n")
+
+print(f"Evaluation metrics saved to: {metrics_path}")
