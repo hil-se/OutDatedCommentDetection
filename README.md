@@ -33,6 +33,5 @@ python ProcessData.py
 Running this file will produce new java_train.csv, java_test.csv, and java_valid.csv files. In the Source and Target columns of these files, instead of storing actual comment and code, it will store embeddings of comment and code. These files will be stored in the newly created directory Data/embedding/CodeSearch300.      
 
 ### The Process of Training
-![SWEN 732 Documentation - domain model (1)](https://github.com/user-attachments/assets/edea50b3-00b2-45e1-8d7a-594b13d4aed1)
-
+![SWEN 732 Documentation](https://github.com/user-attachments/assets/cb3392d4-b455-4892-97ba-41dc01474acd)
 
