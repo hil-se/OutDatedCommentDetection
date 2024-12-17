@@ -53,6 +53,8 @@ Running this file will produce new java_train.csv, java_test.csv, and java_valid
 ![image](https://github.com/user-attachments/assets/52245b09-8f3f-4ba9-9b9c-0be8058408d8)
 
 Results: Rank-error=0.3564, F1-Score=0.026, Recall=0.019, Precision=0.042
+![395314628-b1bd49d2-7665-4805-9002-e8e206a6aad5](https://github.com/user-attachments/assets/e9cbf8c8-5568-4ce0-a304-c7eea248e3b3)
+
 
 
 
