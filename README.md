@@ -19,7 +19,8 @@ unzip cup2_dataset.zip
 cd cup2_dataset
 mv Java_train.jsonl Java_test.jsonl Java_valid.jsonl ../
 ```
-All the newly created csv files will have two columns: 'Source' carrying the comment, and 'Target' carrying the code.
+All the newly created csv files will have five columns: Source_old (carrying the comment of previous commit), Target_old (carrying the method of previous commit), Source_new (carrying the comment of new commit), Target_new (carrying the method of new commit), and Label. The Label is true if Source_old is outdated (differs significantly from Source_new) and false if it is up-to-date (similar to Source_new).
+
 ### Dependencies
 The required dependencies must be installed to run the source code.
 ```
