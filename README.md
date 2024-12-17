@@ -43,4 +43,17 @@ Running this file will produce new java_train.csv, java_test.csv, and java_valid
 - Case 1: We train the two encoders to consider the cosine similarity between old_comment and new_method where the label was true as 0
 - Case 2: We train the two encoders to consider the cosine similarity between old_comment and new_method same as the cosine similarity between the old_comment and new_comment. Because we assumed that the new comment should reflect the changes that the new method carries.
 
+### Testing
+- We used rank_error method that computes the average rank error for instances with Label = True.
+- It sorts the data by Cosine Similarity in ascending order which in the ideal scenario will arrange all the true labels before all the false labels.
+- For each True Label, it accumulates the count of False labels encountered before it, normalized by the total number of entries.
+- It divides the total accumulated error by the count of True labels, giving the average rank error.
+- We tested our model on java_valid_all.csv (an unbalanced real world set) and then we tested it on a balanced set as well called java_valid_all_subset.csv. java_valid_all_subset carries 500 True label instances and 500 False label instances.
+  
+![image](https://github.com/user-attachments/assets/52245b09-8f3f-4ba9-9b9c-0be8058408d8)
+
+Results: Rank-error=0.3564, F1-Score=0.026, Recall=0.019, Precision=0.042
+
+
+
 
