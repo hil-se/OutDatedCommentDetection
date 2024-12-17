@@ -35,3 +35,11 @@ Running this file will produce new java_train.csv, java_test.csv, and java_valid
 ### The Process of Training
 ![SWEN 732 Documentation](https://github.com/user-attachments/assets/cb3392d4-b455-4892-97ba-41dc01474acd)
 
+- Encoder 1 only takes method embeddings as input
+- Encoder 2 only takes comment embeddings as input
+- First we train the two encoders to consider the cosine similarity between old_comment and old_method as 1
+- Then we train the two encoders to consider the cosine similarity between old_comment and new_method where the label was false as 1
+- Case 1: We train the two encoders to consider the cosine similarity between old_comment and new_method where the label was true as 0
+- Case 2: We train the two encoders to consider the cosine similarity between old_comment and new_method same as the cosine similarity between the old_comment and new_comment. Because we assumed that the new comment should reflect the changes that the new method carries.
+
+
