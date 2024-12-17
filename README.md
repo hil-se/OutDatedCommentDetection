@@ -34,6 +34,9 @@ python ProcessData.py
 Running this file will produce new java_train.csv, java_test.csv, and java_valid.csv files. In the Source and Target columns of these files, instead of storing actual comment and code, it will store embeddings of comment and code. These files will be stored in the newly created directory Data/embedding/CodeSearch300.      
 
 ### The Process of Training
+
+- run the Training.py file
+
 ![SWEN 732 Documentation](https://github.com/user-attachments/assets/cb3392d4-b455-4892-97ba-41dc01474acd)
 
 - Encoder 1 only takes method embeddings as input
@@ -44,6 +47,8 @@ Running this file will produce new java_train.csv, java_test.csv, and java_valid
 - Case 2: We train the two encoders to consider the cosine similarity between old_comment and new_method same as the cosine similarity between the old_comment and new_comment. Because we assumed that the new comment should reflect the changes that the new method carries.
 
 ### Testing
+- run the Testing.py file
+- This file creates a new CSV file which has three columns predicted_similarity (carries the cosine similarity between Source_old and Target_new predicted by the model), true_labels (value from the Label column), predicted_labels (our predicted label). 
 - We used rank_error method that computes the average rank error for instances with Label = True.
 - It sorts the data by Cosine Similarity in ascending order which in the ideal scenario will arrange all the true labels before all the false labels.
 - For each True Label, it accumulates the count of False labels encountered before it, normalized by the total number of entries.
