@@ -48,7 +48,7 @@ Running this file will produce new java_train.csv, java_test.csv, and java_valid
 
 ### Testing
 - run the Testing.py file
-- This file creates a new CSV file which has three columns predicted_similarity (carries the cosine similarity between Source_old and Target_new predicted by the model), true_labels (value from the Label column), predicted_labels (our predicted label). 
+- This file creates a new CSV file 'predicted_cosine_similarity_results.csv', which has three columns predicted_similarity (carries the cosine similarity between Source_old and Target_new predicted by the model), true_labels (value from the Label column), predicted_labels (our predicted label). 
 - We used rank_error method that computes the average rank error for instances with Label = True.
 - It sorts the data by Cosine Similarity in ascending order which in the ideal scenario will arrange all the true labels before all the false labels.
 - For each True Label, it accumulates the count of False labels encountered before it, normalized by the total number of entries.
